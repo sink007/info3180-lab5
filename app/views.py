@@ -14,6 +14,7 @@ from flask import render_template, request,  jsonify, send_file, redirect, url_f
 from flask_login import login_user, logout_user, current_user, login_required
 from werkzeug.utils import secure_filename
 from datetime import datetime
+from flask_wtf.csrf import generate_csrf
 ###
 # Routing for your application.
 ###
@@ -22,21 +23,25 @@ from datetime import datetime
 def index():
     return jsonify(message="This is the beginning of our API")
 
+@app.route('/api/v1/csrf-token', methods=['GET'])
+def get_csrf():
+    return jsonify({'csrf_token': generate_csrf()})
+
+
 @app.route('/api/v1/movies', methods=['POST'])
 def movies():
     form = MovieForm()
     if form.validate_on_submit():
-        title = form.title.data
-        description = form.description.data
+        tit = form.title.data
+        desc = form.description.data
         file = form.poster.data 
 
         filename = secure_filename(file.filename)
-        file_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
-        file.save(file_path)
+        file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
 
         new_movie = Movies(
-            title=title,
-            description=description,
+            title=tit,
+            description=desc,
             poster=filename,
             created_at=datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         )
