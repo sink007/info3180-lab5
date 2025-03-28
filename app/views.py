@@ -27,37 +27,53 @@ def index():
 def get_csrf():
     return jsonify({'csrf_token': generate_csrf()})
 
+@app.route("/api/v1/posters/<filename>")
+def get_image(filename):
+    return send_from_directory(os.path.join(os.getcwd(),app.config['UPLOAD_FOLDER']), filename)
 
-@app.route('/api/v1/movies', methods=['POST'])
+@app.route('/api/v1/movies', methods=['POST', 'GET'])
 def movies():
-    form = MovieForm()
-    if form.validate_on_submit():
-        tit = form.title.data
-        desc = form.description.data
-        file = form.poster.data 
+    if request.method== "POST":
+        form = MovieForm()
+        if form.validate_on_submit():
+            tit = form.title.data
+            desc = form.description.data
+            file = form.poster.data 
 
-        filename = secure_filename(file.filename)
-        file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
+            filename = secure_filename(file.filename)
+            file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
 
-        new_movie = Movies(
-            title=tit,
-            description=desc,
-            poster=filename,
-            created_at=datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        )
+            new_movie = Movies(
+                title=tit,
+                description=desc,
+                poster=filename,
+                created_at=datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            )
 
-        db.session.add(new_movie)
-        db.session.commit()
+            db.session.add(new_movie)
+            db.session.commit()
 
-        return jsonify({
-            "message": "Movie Successfully added",
-            "title": new_movie.title,
-            "poster": new_movie.poster,
-            "description": new_movie.description
-        })
-    
-    else:
-        return form_errors(form)
+            return jsonify({
+                "message": "Movie Successfully added",
+                "title": new_movie.title,
+                "poster": new_movie.poster,
+                "description": new_movie.description
+            })
+        
+        else:
+            return form_errors(form)
+    elif request.method == 'GET':
+        movies = Movies.query.all()
+        movies_list = [
+            {
+                "id": movie.id,
+                "title": movie.title,
+                "description": movie.description,
+                "poster": f"/api/v1/posters/{movie.poster}"  # Serve poster via another endpoint
+            }
+            for movie in movies
+        ]
+        return jsonify({"movies": movies_list})
 
 
 ###

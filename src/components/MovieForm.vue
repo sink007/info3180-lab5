@@ -44,7 +44,6 @@
 
     const handleFileUpload = (event) => {
         poster.value = event.target.files[0];
-        console.log("Selected file:", poster.value);
     };
     
     const saveMovie = async () => {
